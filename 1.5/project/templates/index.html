@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <title>Облік товарів на складі</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>📦 Облік товарів на складі</h1>
+
+        <h2>Додати товар</h2>
+        <form id="add-product-form">
+            <input type="text" id="product_name" placeholder="Назва товару" required>
+            <input type="number" id="quantity" placeholder="Кількість" required min="0">
+            <button type="submit">Додати</button>
+        </form>
+
+        <h2>Список товарів</h2>
+        <ul id="product-list"></ul>
+    </div>
+
+    <script src="{{ url_for('static', filename='app.js') }}"></script>
+</body>
+</html>
