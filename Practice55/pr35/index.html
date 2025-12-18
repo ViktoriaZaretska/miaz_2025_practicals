@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Дашборд військового аналітика</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <nav class="navbar">
+        <div class="logo">Каедра ІАТ</div>
+        <ul class="nav-menu">
+            <li><a href="#">Головна</a></li>
+            <li><a href="#">Аналітика</a></li>
+            <li><a href="#">Звіти</a></li>
+            <li><a href="#">Контакти</a></li>
+        </ul>
+    </nav>
+
+    <header class="header">
+        <h1>Інформація про групи</h1>
+    </header>
+
+    <main class="container">
+        <div class="flex-container">
+            <div class="graph-block">
+                <h2>Розподіл в/звань</h2>
+                <div class="graph-placeholder">
+                    <div id="info-cards"></div>                    
+                </div>
+            </div>
+            <div class="graph-block">
+                <h2>Графік чисельності груп</h2>
+                <div class="graph-placeholder">
+                    <canvas id="chartGroups"></canvas>
+                </div>
+            </div>
+            <div class="graph-block">
+                <h2>Список груп</h2>
+                <div class="graph-placeholder">
+                    <table id="student-table">
+                        <thead>
+                            <tr>
+                                <th>ПІБ</th>
+                                <th>День нар.</th>
+                                <th>Звання</th>
+                                <th>Група</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="graph-block">
+                <h2>Розташування груп</h2>
+                <div class="graph-placeholder">
+                    <div id="map"></div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer class="footer">
+        © 2025 Збройні Сили України
+    </footer>
+
+</body>
+ <!-- Chart.js CDN -->
+ <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+ <!-- Leaflet.js CDN -->
+ <link
+   rel="stylesheet"
+   href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+ />
+ <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+
+<script type="module" src="main.js"></script>
+</html>

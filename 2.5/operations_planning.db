@@ -1,0 +1,18 @@
+-- Створюємо таблицю Operations
+CREATE TABLE Operations (
+    Operation_ID INTEGER PRIMARY KEY,
+    Operation_Name TEXT NOT NULL,
+    Commander TEXT NOT NULL,
+    Operation_Start_Date DATE,
+    Operation_End_Date DATE
+);
+
+-- Створюємо таблицю Operations_Staff
+CREATE TABLE Operations_Staff (
+    ID INTEGER PRIMARY KEY AUTOINCREMENT,
+    Name TEXT NOT NULL,
+    Role TEXT,
+    Operation_ID INTEGER,
+    Date_Assigned DATE,
+    FOREIGN KEY (Operation_ID) REFERENCES Operations(Operation_ID)
+);

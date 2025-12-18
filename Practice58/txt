@@ -1,0 +1,6 @@
+export DATABASE_URL=postgresql://postgres:admin@localhost:5432/shtab_insait
+scripts/init_db.sh
+scripts/seed_db.sh
+
+
+psql "postgresql://postgres:admin@localhost:5432/shtab_insait" -f db\schema.sql

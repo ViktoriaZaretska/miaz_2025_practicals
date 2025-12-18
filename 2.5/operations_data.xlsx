@@ -1,0 +1,13 @@
+| Operation_ID | Operation_Name | Commander       | Operation_Start_Date | Operation_End_Date |
+| ------------ | -------------- | --------------- | -------------------- | ------------------ |
+| 1            | Shield Line    | Col. Hrytsenko  | 2025-02-01           | 2025-04-30         |
+| 2            | Silent Storm   | Lt.Col. Kravets | 2025-05-10           | 2025-06-15         |
+| 3            | Iron Falcon    | Maj. Shevchenko | 2025-07-01           | 2025-09-20         |
+
+| ID | Name         | Role             | Operation_ID | Date_Assigned |
+| -- | ------------ | ---------------- | ------------ | ------------- |
+| 1  | Ivanenko O.  | Analyst          | 1            | 2025-02-01    |
+| 2  | Petrenko I.  | Logistic Officer | 1            | 2025-02-03    |
+| 3  | Marchenko P. | Field Commander  | 2            | 2025-05-10    |
+| 4  | Bondar A.    | Communications   | 2            | 2025-05-12    |
+| 5  | Tkachenko V. | Intelligence     | 3            | 2025-07-01    |

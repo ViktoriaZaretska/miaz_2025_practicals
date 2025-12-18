@@ -1,0 +1,185 @@
+ІНСТРУКЦІЯ (TXT)
+Практичне завдання: створення міні ІАС «Штаб-Інсайт» (PostgreSQL → FastAPI (sync) → Web simpleJS)
+
+Вимоги (дуже просто):
+- Без Docker
+- Без async
+- Без ORM
+- Дані зберігаються в PostgreSQL локально
+- API: FastAPI + psycopg2 (raw SQL)
+- Frontend: 1 сторінка (HTML/CSS/JS), Chart.js через CDN
+
+Коротко про фокус варіанту «Штаб-Інсайт»:
+- Ціль: автоматичні підсумки (короткий текстовий висновок) на основі KPI та трендів, готові “слайди-інсайти” у вигляді блоків дашборду, перемикач режимів **executive/analyst/demo** для різних аудиторій.
+- Примітка: базова архітектура та вимоги зберігаються (PostgreSQL → FastAPI (sync) → Web simpleJS).
+
+------------------------------------------------------------
+Етап 0. Каркас проєкту
+1) Створи структуру папок:
+   - db/
+   - api/
+   - web/
+   - scripts/
+   - docs/
+
+2) Додай файли в корінь репозиторію:
+   - .gitignore
+   - README.md
+   - requirements.txt
+   - .env.example
+
+3) Залежності (мінімально) у requirements.txt:
+   - fastapi
+   - uvicorn
+   - psycopg2-binary
+   - python-dotenv
+
+4) Створи api/main.py:
+   - FastAPI-застосунок
+   - ендпоїнт GET /health → { "status": "ok" }
+
+5) У README.md коротко опиши запуск:
+   - venv → pip install
+   - БД + schema + seed
+   - uvicorn для API
+   - python -m http.server для web
+
+------------------------------------------------------------
+Етап 1. Схема БД та тестові дані
+1) Створи db/schema.sql (одна таблиця incidents):
+   - id SERIAL PRIMARY KEY
+   - occurred_at TIMESTAMP NOT NULL
+   - sector TEXT NOT NULL
+   - direction TEXT NOT NULL
+   - event_type TEXT NOT NULL
+   - intensity INT NOT NULL
+   - source TEXT
+   - summary TEXT
+
+2) Додай індекси:
+   - occurred_at
+   - sector
+   - direction
+   - event_type
+
+3) Створи db/seed.py:
+   - підключення через DATABASE_URL з .env
+   - генерація 500 записів за останні 90 днів
+   - 3–6 секторів, 4–8 напрямків, 4–6 типів подій
+   - intensity в діапазоні 1..50
+
+4) Створи скрипти (Linux + Windows):
+   - scripts/init_db.sh та scripts/init_db.ps1:
+     застосувати db/schema.sql через psql
+   - scripts/seed_db.sh та scripts/seed_db.ps1:
+     запустити python db/seed.py
+
+5) Онови .env.example:
+   - DATABASE_URL=postgresql://USER:PASSWORD@localhost:5432/shtab_insait
+
+------------------------------------------------------------
+Етап 2. Мінімальний доступ до БД у FastAPI
+1) Створи api/db.py:
+   - читає DATABASE_URL з env
+   - контекст-менеджер get_conn() повертає psycopg2 connection
+   - autocommit=True
+   - без пулів, без async, без ORM
+
+------------------------------------------------------------
+Етап 3. API ендпоїнти для дашборду (sync, raw SQL)
+Реалізуй у api/main.py синхронні ендпоїнти, які повертають JSON.
+Для всіх аналітичних ендпоїнтів додай опційні query params:
+- from (YYYY-MM-DD)
+- to (YYYY-MM-DD)
+- sector
+- direction
+- event_type
+- min_intensity
+
+Ендпоїнти:
+1) GET /filters
+   → { sectors:[], directions:[], event_types:[], min_date:"", max_date:"" }
+
+2) GET /kpi
+   → { total_incidents, total_intensity, avg_intensity, top_direction }
+
+3) GET /trend?group=day|week (default day)
+   → [{ t, value }]  (value = COUNT)
+
+4) GET /distribution/directions
+   → [{ label, value }]
+
+5) GET /distribution/types
+   → [{ label, value }]
+
+6) GET /heatmap  (sector × week)
+   → { columns:[week_labels], rows:[{ sector, values:[...] }] }
+
+7) GET /incidents?page=1&page_size=20&sort=occurred_at&order=desc
+   → { total, page, page_size, items:[...] }
+
+8) GET /incidents/{id}
+   → повний запис
+
+Додатково:
+- Додай найпростішу CORS-настройку “allow all”, щоб web міг викликати API.
+- Мінімальна валідація:
+  - page_size обмежити (наприклад 5..100)
+  - коректно парсити дати
+
+------------------------------------------------------------
+Етап 4. Web(simpleJS) дашборд + 3 режими аудиторій
+1) Створи web/index.html, web/app.js, web/styles.css.
+2) Підключи Chart.js через CDN (без збірки).
+3) У app.js зафіксуй:
+   - API_BASE_URL = "http://localhost:8000"
+
+4) Реалізуй блоки:
+- Фільтри: from/to, sector, direction, event_type, min_intensity + кнопка Apply
+- KPI: 4 картки
+- Тренд-графік
+- 2 діаграми розподілу (напрямки, типи)
+- Heatmap-таблиця (sector × week) з простим зафарбуванням клітинок
+- Таблиця інцидентів з пагінацією + кнопка Details → модальне вікно (дані з /incidents/{id})
+
+5) Реалізуй 3 режими через URL-параметр ?view=
+- executive:
+  - показати KPI + тренд + короткий текст “інсайт”
+  - приховати heatmap і таблицю
+- analyst:
+  - показати все
+- demo:
+  - показати KPI + графіки + heatmap
+  - приховати таблицю інцидентів
+  - приховати поле source всюди
+
+6) Після зміни фільтрів мають оновлюватися всі видимі блоки узгоджено.
+
+------------------------------------------------------------
+Етап 5. README “запуск за 3 хв”
+Онови README.md і додай точні команди для Windows і Linux:
+- створення venv
+- pip install -r requirements.txt
+- створення БД shtab_insait (psql команда)
+- запуск scripts/init_db.*
+- запуск scripts/seed_db.*
+- запуск API: uvicorn api.main:app --reload
+- запуск web: cd web && python -m http.server 5500
+
+Додай короткий сценарій демонстрації (6–8 рядків):
+- executive → analyst → demo
+
+------------------------------------------------------------
+Етап 6. Мінімальна перевірка працездатності
+1) Додай scripts/smoke_test.sh і scripts/smoke_test.ps1:
+   - робить HTTP-запити до /health, /filters, /kpi, /trend
+   - виводить “OK”, якщо відповіді отримані й містять очікувані ключі
+2) Можна використати curl або короткий Python-скрипт через urllib.request.
+
+------------------------------------------------------------
+Результат, який потрібно здати
+- GitHub-репозиторій з папками db/api/web/scripts/docs
+- Працюючий запуск: БД → API → Web
+- Дашборд з фільтрами, KPI, графіками, heatmap, таблицею (в analyst)
+- 3 режими (executive/analyst/demo) через параметр ?view=
+- README з командами запуску та коротким сценарієм демонстрації

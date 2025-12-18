@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang="uk">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Command Center — Обіг інформації</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+<header class="topbar">
+  <div class="brand">
+    <div class="title">Command Center</div>
+    <div class="subtitle">Обіг інформації на ПУ ОУВ</div>
+  </div>
+
+  <div class="filters" id="filters"></div>
+
+  <div class="controls">
+    <button class="btn" id="btnRefresh">Оновити</button>
+    <button class="btn ghost" id="btnFullscreen">Full Screen</button>
+  </div>
+</header>
+
+<main class="screen">
+  <!-- TOP GRID -->
+  <section class="topGrid">
+    <!-- LEFT: KPI -->
+    <div class="card cardPad kpiPanel">
+      <div class="cardHead">
+        <div>
+          <div class="cardTitle">Інтегральна оцінка</div>
+          <div class="cardHint" id="ioiHint">—</div>
+        </div>
+        <div class="stamp" id="rangeStamp">7 днів</div>
+      </div>
+
+      <div class="kpiPanelBody">
+        <div class="ringWrap small">
+          <canvas id="ioiRing" width="170" height="170"></canvas>
+          <div class="ringText">
+            <div class="ringValue" id="ioiValue">—</div>
+            <div class="ringSub">ІОІ</div>
+          </div>
+        </div>
+
+        <div class="kpis kpis2">
+          <div class="kpi" id="kpiOper">
+            <div class="kpiVal">—</div>
+            <div class="kpiLab">Оперативність, %</div>
+          </div>
+          <div class="kpi" id="kpiAvg">
+            <div class="kpiVal">—</div>
+            <div class="kpiLab">Цикл (год:хв)</div>
+          </div>
+          <div class="kpi" id="kpiOver">
+            <div class="kpiVal">—</div>
+            <div class="kpiLab">Прострочено</div>
+          </div>
+          <div class="kpi" id="kpiVol">
+            <div class="kpiVal">—</div>
+            <div class="kpiLab">Обсяг 7 днів</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="miniRow">
+        <div class="miniTitle">Відпрацьовані документи</div>
+        <div class="chartBox compact">
+          <canvas id="workedChart" height="140"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- CENTER: MAIN CHARTS -->
+    <div class="card cardPad mainPanel">
+      <div class="mainHead">
+        <div>
+          <div class="cardTitle">Динаміка за тиждень</div>
+          <div class="cardHint">T̄ (год:хв) + обсяг / Потік</div>
+        </div>
+
+        <div class="seg" id="chartSeg">
+          <button class="segBtn active" data-tab="cycle">Цикл</button>
+          <button class="segBtn" data-tab="flow">Потік</button>
+          <button class="segBtn" data-tab="units">Підрозділи</button>
+        </div>
+      </div>
+
+      <div class="tabArea">
+        <div class="tab active" id="tab-cycle">
+          <div class="chartBox tall">
+            <canvas id="cycleWeek"></canvas>
+          </div>
+        </div>
+
+        <div class="tab" id="tab-flow">
+          <div class="chartBox tall">
+            <canvas id="flowWeek"></canvas>
+          </div>
+        </div>
+
+        <div class="tab" id="tab-units">
+          <div class="chartBox tall">
+            <canvas id="unitBar"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT: TIME + CONTROL -->
+    <div class="card cardPad rightPanel">
+      <div class="cardTitle">Час та контроль</div>
+      <div class="cardHint">Астрономічний / Оперативний</div>
+
+      <div class="timeBox" id="timeBox"></div>
+
+      <div class="ctrlTableWrap fixed">
+        <table class="ctrlTable" id="ctrlTable">
+          <thead>
+            <tr>
+              <th>Док</th>
+              <th>Контр.</th>
+              <th>Статус</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+
+      <!-- ✅ Нижній рядок прибрано повністю -->
+    </div>
+  </section>
+
+  <!-- BOTTOM: FEED -->
+  <section class="card cardPad feedPanel">
+    <div class="feedHeader">
+      <div>
+        <div class="cardTitle">Жива стрічка документів</div>
+        <div class="cardHint">Останні записи (compact)</div>
+      </div>
+
+      <div class="feedTools">
+        <input id="q" class="search" placeholder="Пошук (текст/тип/J/статус)…" />
+        <select id="feedLimit" class="select">
+          <option value="50">50</option>
+          <option value="100" selected>100</option>
+          <option value="200">200</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="feedTableWrap flexFill">
+      <table class="feedTable" id="docsTable">
+        <thead>
+          <tr>
+            <th>Час</th><th>J</th><th>Тип</th><th>Статус</th><th>Пріор.</th><th>Цикл (год:хв)</th><th>Короткий зміст</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </section>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
+<script src="app.js"></script>
+
+<script>
+  (function(){
+    const seg = document.getElementById("chartSeg");
+    if(!seg) return;
+
+    function show(tab){
+      document.querySelectorAll(".segBtn").forEach(b => b.classList.toggle("active", b.dataset.tab === tab));
+      document.querySelectorAll(".tab").forEach(t => t.classList.remove("active"));
+      const el = document.getElementById("tab-" + tab);
+      if(el) el.classList.add("active");
+      window.dispatchEvent(new Event("resize"));
+    }
+
+    seg.addEventListener("click", (e)=>{
+      const btn = e.target.closest(".segBtn");
+      if(!btn) return;
+      show(btn.dataset.tab);
+    });
+  })();
+</script>
+</body>
+</html>
