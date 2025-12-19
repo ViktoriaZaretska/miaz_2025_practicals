@@ -1,0 +1,222 @@
+<!doctype html>
+<html lang="uk">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>ІАС — План-графік ресурсів</title>
+
+  <link rel="stylesheet" href="styles.css" />
+
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <!-- Leaflet (OpenStreetMap) -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+</head>
+
+<body>
+  <header class="topbar">
+    <div class="topbarRow">
+      <div>
+        <h1>План-графік ресурсів (Resource Allocation)</h1>
+        <div class="muted">
+          API статус: <span id="apiStatus" class="badge">…</span>
+          <span class="dot">•</span>
+          <span id="lastUpdated" class="muted">оновлення: —</span>
+        </div>
+      </div>
+
+      <div class="topbarActions">
+        <div class="liveBox">
+          <label class="liveLabel">
+            <input type="checkbox" id="liveToggle" />
+            Live
+          </label>
+          <select id="liveInterval" title="Інтервал оновлення">
+            <option value="10">10s</option>
+            <option value="20" selected>20s</option>
+            <option value="30">30s</option>
+            <option value="60">60s</option>
+          </select>
+          <button id="btnRefresh" class="ghost" title="Оновити зараз">↻ Refresh</button>
+        </div>
+
+        <button id="btnFullscreen" class="ghost" title="Повноекранний режим">⛶ Full screen</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="container">
+    <!-- Filters -->
+    <section class="card reveal">
+      <h2>Фільтри</h2>
+      <div class="filters">
+        <label>
+          Start (occurred_at)
+          <input type="datetime-local" id="fStart" />
+        </label>
+
+        <label>
+          End (occurred_at)
+          <input type="datetime-local" id="fEnd" />
+        </label>
+
+        <label>
+          Напрям (direction)
+          <select id="fDirection">
+            <option value="">Усі</option>
+            <option>Північ</option>
+            <option>Південь</option>
+            <option>Схід</option>
+            <option>Захід</option>
+            <option>Центр</option>
+          </select>
+        </label>
+
+        <label>
+          Мін. тривалість (duration_days)
+          <input type="number" id="fMinValue" min="0" step="0.5" placeholder="наприклад 5" />
+        </label>
+
+        <label>
+          Confirmed
+          <select id="fConfirmed">
+            <option value="">Усі</option>
+            <option value="true">true</option>
+            <option value="false">false</option>
+          </select>
+        </label>
+
+        <div class="filterActions">
+          <button id="btnApply">Застосувати</button>
+          <button class="ghost" id="btnReset">Скинути</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- KPI -->
+    <section class="grid kpiGrid">
+      <div class="card kpi reveal">
+        <div class="kpiTitle">К-сть подій</div>
+        <div class="kpiValue" id="kpiCount">—</div>
+        <div class="kpiDelta" id="kpiCountDelta">—</div>
+        <div class="spark"></div>
+      </div>
+
+      <div class="card kpi reveal">
+        <div class="kpiTitle">Сума amount</div>
+        <div class="kpiValue" id="kpiAmountSum">—</div>
+        <div class="kpiDelta" id="kpiAmountSumDelta">—</div>
+        <div class="spark"></div>
+      </div>
+
+      <div class="card kpi reveal">
+        <div class="kpiTitle">Сер. duration_days</div>
+        <div class="kpiValue" id="kpiDurationAvg">—</div>
+        <div class="kpiDelta" id="kpiDurationAvgDelta">—</div>
+        <div class="spark"></div>
+      </div>
+
+      <div class="card kpi reveal">
+        <div class="kpiTitle">Топ resource_type</div>
+        <div class="kpiValue" id="kpiTopType">—</div>
+        <div class="kpiDelta" id="kpiTopTypeDelta">Δ: —</div>
+        <div class="spark"></div>
+      </div>
+    </section>
+
+    <!-- Map + Trend -->
+    <section class="grid twoCols">
+      <section class="card reveal">
+        <div class="row">
+          <h2>Карта подій (OpenStreetMap)</h2>
+          <div class="muted small">останні N подій з фільтрами</div>
+        </div>
+        <div id="map" class="map"></div>
+        <div class="muted small" id="mapHint"></div>
+      </section>
+
+      <section class="card reveal">
+        <div class="row">
+          <h2>Тренд</h2>
+          <div class="segmented">
+            <button id="btnDay" class="active">Day</button>
+            <button id="btnWeek">Week</button>
+          </div>
+        </div>
+        <canvas id="trendChart" height="110"></canvas>
+      </section>
+    </section>
+
+    <!-- Distributions -->
+    <section class="grid twoCols">
+      <section class="card reveal">
+        <h2>Розподіл по direction</h2>
+        <canvas id="dirChart" height="140"></canvas>
+      </section>
+
+      <section class="card reveal">
+        <h2>Розподіл по unit</h2>
+        <canvas id="unitChart" height="140"></canvas>
+      </section>
+    </section>
+
+    <!-- Heatmap -->
+    <section class="card reveal">
+      <div class="row">
+        <h2>Heatmap: resource_type × тиждень</h2>
+        <div class="muted small">метрика: сума amount</div>
+      </div>
+
+      <div id="heatmap" class="heatmap"></div>
+      <div class="muted small" id="heatLegend"></div>
+    </section>
+
+    <!-- Table -->
+    <section class="card reveal">
+      <div class="row">
+        <h2>Події</h2>
+        <div class="pager">
+          <button id="btnPrev" class="ghost">Prev</button>
+          <div class="muted" id="pageInfo">—</div>
+          <button id="btnNext" class="ghost">Next</button>
+        </div>
+      </div>
+
+      <div class="tableWrap">
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Дата/час</th>
+              <th>Напрям</th>
+              <th>Тип</th>
+              <th>Unit</th>
+              <th>Amount</th>
+              <th>Days</th>
+              <th>Confirmed</th>
+            </tr>
+          </thead>
+          <tbody id="tbody"></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <!-- Modal -->
+  <div id="modalBackdrop" class="modalBackdrop hidden">
+    <div class="modal">
+      <div class="modalHeader">
+        <h3 id="modalTitle">Деталі</h3>
+        <button id="btnClose" class="ghost">Закрити</button>
+      </div>
+      <pre id="modalBody" class="modalBody"></pre>
+    </div>
+  </div>
+
+  <div id="toast" class="toast hidden">Оновлено</div>
+
+  <script src="app.js"></script>
+</body>
+</html>

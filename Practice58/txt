@@ -4,3 +4,16 @@ scripts/seed_db.sh
 
 
 psql "postgresql://postgres:admin@localhost:5432/shtab_insait" -f db\schema.sql
+
+
+
+
+
+
+python -m venv .venv
+.\.venv\Scripts\activate
+pip install -r requirements.txt
+python scripts\run_sql.py db\schema.sql
+python scripts\run_sql.py db\migrate_control.sql
+python db\seed.py
+uvicorn api.main:app --reload
